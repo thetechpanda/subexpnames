@@ -1,0 +1,79 @@
+package subexpnames // import "github.com/thetechpanda/subexpnames"
+
+Package subexpnames provides functions for matching regular expressions against
+strings and extracting match values in a hierarchical manner.
+
+subexpnames.Match first creates a tree-like structure of matches by matching a
+regular expression against a subject string.
+
+The way the package splits the regular expression into a tree-like structure
+is by using the regular expression's FindAllStringSubmatchIndex and
+FindAllStringSubmatch methods. It then finds all matches containing the start
+and end indexes of the match and the corresponding key and value.
+
+Calls to Matches' functions recursively descend into the nested matchValues to
+find the appropriate match, for this reason using this package on large regular
+expressions can be slow.
+
+TYPES
+
+type MatchValue struct {
+	Key    string
+	Value  string
+	Nested []*MatchValue
+
+	// Has unexported fields.
+}
+    MatchValue represents a single match found in the subject string that
+    corresponds to the regular expression. It contains the following information
+    about the match:
+      - Key: A string that identifies the match, often corresponding to a named
+        capture group in the regular expression.
+      - Value: The substring from the subject string that was matched.
+      - start: The starting index of the match in the subject string.
+      - end: The ending index of the match in the subject string.
+      - Nested: A slice of pointers to MatchValue structs representing any
+        nested matches. Nested matches occur when the regular expression
+        contains capture groups within other capture groups. This allows for
+        representing the hierarchical structure of matches in a tree-like form.
+
+type Matches []*MatchValue
+    Matches represents a collection of MatchValue pointers. It is used to store
+    multiple matches found in a subject string that match a regular expression.
+
+func Match(regexp *regexp.Regexp, subject string) (*Matches, bool)
+    Match checks if the subject string matches the provided regular expression.
+    If a match is found, it returns a regMatch object containing the tree-like
+    structure of matchValues. Otherwise, it returns nil and false.
+
+func (rm *Matches) Get(group int, value int, keys ...string) (string, bool)
+    Get retrieves the value at the specified index from the specified match.
+    If the match, value, or keys are not found, it returns an empty string and
+    false. The function allows for accessing specific values within a group of
+    matches based on their keys.
+
+func (rm *Matches) GetAll(group int, keys ...string) ([]string, bool)
+    GetAll retrieves all the values that match the provided keys from the
+    specified match. If the match or keys are not found, it returns nil and
+    false. Otherwise, it returns a slice of strings containing the matching
+    values and true.
+
+func (rm *Matches) GetFirstValueOfGroup(group int, keys ...string) (string, bool)
+    GetFirstValueOfGroup retrieves the first value of the group that matches the
+    provided keys. If the keys sequence is not found, it returns an empty string
+    and false. This function is a convenience method for quickly accessing the
+    first value in a group of matches.
+
+func (rm *Matches) GetGroup(group int) (*MatchValue, bool)
+    GetGroup retrieves the match at the specified index from the Matches object.
+    If the index is out of bounds, it returns nil and false. This function
+    provides access to individual match groups within the collection of matches.
+
+func (rm *Matches) Keys(group int) [][]string
+    Keys retrieves all the keys from the specified group. It returns a slice of
+    slices of strings containing the keys and the keys of their nested matches.
+    If a key pair is repeated, it will only be added once.
+
+func (rm *Matches) Len() int
+    Len returns the number of groups in the Matches object.
+
